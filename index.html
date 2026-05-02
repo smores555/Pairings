@@ -2,150 +2,140 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>PBS | SAN 73G Pairing Sorter</title>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <title>PBS | SAN Pairings</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        :root { --pbs-blue: #00457C; --pbs-yellow: #FFD200; --pbs-grey: #F4F4F4; }
-        body { font-family: 'Montserrat', sans-serif; background: var(--pbs-grey); margin: 0; color: #333; }
+        :root { --nav-blue: #005eb8; --nav-header: #2c3e50; --nav-bg: #f5f7f9; --nav-border: #dbe4eb; }
+        body { font-family: 'Roboto', sans-serif; background: var(--nav-bg); margin: 0; font-size: 13px; }
         
-        /* PBS Style Header */
-        header { background: var(--pbs-blue); color: white; padding: 25px; border-bottom: 6px solid var(--pbs-yellow); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        header h1 { margin: 0; font-size: 24px; letter-spacing: 1px; }
-
-        .dashboard { display: grid; grid-template-columns: 300px 1fr; gap: 20px; padding: 20px; max-width: 1400px; margin: auto; }
-
-        /* Sidebar Sorter */
-        .sidebar { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); height: fit-content; }
-        .filter-group { margin-bottom: 25px; }
-        .filter-group h3 { font-size: 14px; text-transform: uppercase; color: var(--pbs-blue); border-bottom: 2px solid var(--pbs-grey); padding-bottom: 5px; }
+        /* Top Navigation Bar */
+        header { background: var(--nav-header); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #004a92; }
+        .controls { background: white; border-bottom: 1px solid var(--nav-border); padding: 10px 20px; display: flex; gap: 20px; align-items: center; }
         
-        select, input { width: 100%; padding: 10px; margin-top: 10px; border: 1px solid #ddd; border-radius: 4px; }
-        .btn-group { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
-        .day-btn { flex: 1; padding: 8px; border: 1px solid var(--pbs-blue); background: white; cursor: pointer; font-weight: bold; }
-        .day-btn.active { background: var(--pbs-blue); color: white; }
+        /* Pairing List Container */
+        .pairing-list { max-width: 1200px; margin: 20px auto; display: flex; flex-direction: column; gap: 2px; }
 
-        /* Pairing Cards */
-        .pairing-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 15px; }
-        .card { background: white; border-left: 8px solid var(--pbs-blue); padding: 15px; border-radius: 4px; position: relative; transition: transform 0.2s; }
-        .card:hover { transform: translateY(-3px); border-left-color: var(--pbs-yellow); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .id-badge { background: var(--pbs-blue); color: white; padding: 4px 8px; font-weight: bold; border-radius: 3px; }
-        .credit-badge { color: var(--pbs-blue); font-weight: bold; font-size: 18px; }
-        .times { font-size: 13px; color: #666; margin: 5px 0; }
-        .calendar { font-family: monospace; font-size: 11px; background: #eee; padding: 5px; border-radius: 3px; margin-top: 10px; }
+        /* Navblue Row Style */
+        .pairing-row { background: white; border: 1px solid var(--nav-border); display: grid; grid-template-columns: 80px 1fr 100px; position: relative; }
+        .id-tab { background: var(--nav-blue); color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; border-right: 2px solid #004a92; }
+        
+        .main-info { padding: 10px 15px; }
+        .info-top { display: grid; grid-template-columns: repeat(4, 1fr); margin-bottom: 5px; }
+        .info-label { color: #555; font-size: 11px; margin-right: 5px; }
+        .info-value { font-weight: bold; color: var(--nav-blue); }
+
+        .days-badge { display: flex; align-items: center; justify-content: center; background: #ebf3fb; color: var(--nav-blue); font-weight: bold; border-left: 1px solid var(--nav-border); font-size: 11px; text-align: center; }
+
+        /* Calendar Strip (1-30) */
+        .calendar-row { grid-column: 1 / 4; border-top: 1px solid #f0f0f0; display: flex; padding: 5px 15px; background: #fff; }
+        .cal-day { flex: 1; text-align: center; font-size: 10px; color: #999; padding: 2px; border-radius: 50%; }
+        .cal-day.active { color: var(--nav-blue); font-weight: bold; background: #e0eefd; color: #000; border: 1px solid var(--nav-blue); }
+
+        /* Inputs */
+        select, input[type="number"] { padding: 5px; border: 1px solid #ccc; border-radius: 3px; font-size: 12px; }
     </style>
 </head>
 <body>
 
 <header>
-    <h1>PUBLIC BROADCASTING SYSTEM | <span style="font-weight:400">SAN DIEGO PAIRING EXPLORER</span></h1>
+    <div><strong>Bid Period:</strong> 2026-06-01 To 2026-06-30</div>
+    <div>Pairings List (73G SAN)</div>
 </header>
 
-<div class="dashboard">
-    <div class="sidebar">
-        <div class="filter-group">
-            <h3>1. Load Data</h3>
-            <input type="file" id="fileInput" accept=".txt">
-        </div>
-
-        <div class="filter-group">
-            <h3>2. Trip Length</h3>
-            <div class="btn-group">
-                <button class="day-btn" onclick="setLength(1)">1D</button>
-                <button class="day-btn" onclick="setLength(2)">2D</button>
-                <button class="day-btn" onclick="setLength(3)">3D</button>
-                <button class="day-btn" onclick="setLength(4)">4D</button>
-                <button class="day-btn active" onclick="setLength('all')">ALL</button>
-            </div>
-        </div>
-
-        <div class="filter-group">
-            <h3>3. Sort Results</h3>
-            <select id="sortOrder" onchange="applyFilters()">
-                <option value="id">Pairing ID</option>
-                <option value="credit">Total Credit (High to Low)</option>
-                <option value="checkin">Earlier Check-In</option>
-                <option value="tafb">TAFB (Length of Trip)</option>
-            </select>
-        </div>
-
-        <div class="filter-group">
-            <h3>4. Days Off Filter</h3>
-            <p style="font-size: 11px;">Hide trips touching this date:</p>
-            <input type="number" id="offDay" min="1" max="30" placeholder="Enter Day (e.g. 15)" oninput="applyFilters()">
-        </div>
+<div class="controls">
+    <div>
+        <strong>File:</strong> <input type="file" id="fileInput" accept=".txt">
     </div>
-
-    <div class="pairing-list" id="pairingList">
-        </div>
+    <div>
+        <strong>Length:</strong>
+        <select id="lenFilter" onchange="processData()">
+            <option value="all">All</option>
+            <option value="1">1 Day</option>
+            <option value="2">2 Day</option>
+            <option value="3">3 Day</option>
+            <option value="4">4 Day</option>
+        </select>
+    </div>
+    <div>
+        <strong>Sort:</strong>
+        <select id="sortBy" onchange="processData()">
+            <option value="id">Pairing ID</option>
+            <option value="credit">High Credit</option>
+            <option value="checkin">Check-In</option>
+        </select>
+    </div>
+    <div>
+        <strong>Off Day:</strong>
+        <input type="number" id="offDay" min="1" max="30" style="width: 50px;" oninput="processData()">
+    </div>
 </div>
+
+<div class="pairing-list" id="pairingList">
+    </div>
 
 <script>
     let rawPairings = [];
-    let currentLength = 'all';
 
     document.getElementById('fileInput').addEventListener('change', function(e) {
         const reader = new FileReader();
-        reader.onload = (event) => parsePairings(event.target.result);
+        reader.onload = (event) => {
+            parseText(event.target.result);
+            processData();
+        };
         reader.readAsText(e.target.files[0]);
     });
 
-    function parsePairings(text) {
-        // Splitting by the long dashed line in your file
-        const blocks = text.split('----------------------------------------------------------------------------------------------------');
-        rawPairings = blocks.map(block => {
-            const idMatch = block.match(/(\d{5})\s+Check-In\s+(\d{2}:\d{2})\s+Check-Out\s+(\d{2}:\d{2})\s+(\d)-Day/);
-            const creditMatch = block.match(/Credit:\s+(\d{3}:\d{2})/);
-            const tafbMatch = block.match(/TAFB:\s+(\d{3}:\d{2})/);
+    function parseText(text) {
+        const blocks = text.split(/----------------------------------------------------------------------------------------------------/);
+        rawPairings = [];
+
+        blocks.forEach(block => {
+            const top = block.match(/(\d{5})\s+Check-In\s+(\d{2}:\d{2})\s+Check-Out\s+(\d{2}:\d{2})\s+(\d)-Day/);
+            const credit = block.match(/Credit:\s+(\d{2,3}:\d{2})/);
+            const tafb = block.match(/TAFB:\s+(\d{2,3}:\d{2})/);
             
-            // Extract the date numbers from the calendar grid
-            const dateMatches = block.match(/\|\s*([\d\s-]{1,30})\s*\|/g);
-            let workedDates = [];
-            if(dateMatches) {
-                workedDates = dateMatches.map(line => line.replace(/[|]/g, '').trim().split(/\s+/)).flat()
-                             .filter(d => d !== '--' && d !== "").map(Number);
-            }
+            // Extract airports found in the flight lines (3-letter codes like PDX, SEA, EWR)
+            const airports = [...new Set(block.match(/\b[A-Z]{3}\b/g))].filter(a => a !== "SAN" && a !== "JUN").slice(0, 3);
 
-            if (idMatch) {
-                return {
-                    id: idMatch[1],
-                    checkin: idMatch[2],
-                    checkout: idMatch[3],
-                    days: parseInt(idMatch[4]),
-                    credit: creditMatch ? creditMatch[1] : "000:00",
-                    creditVal: creditMatch ? parseInt(creditMatch[1].replace(':','')) : 0,
-                    tafb: tafbMatch ? tafbMatch[1] : "000:00",
-                    workedDates: workedDates,
-                    rawCalendar: dateMatches ? dateMatches.join('<br>') : ""
-                };
+            // Calendar dates found in the grid
+            const dateMatches = [...block.matchAll(/\|\s*([\d\s-]{1,21})\s*\|/g)];
+            let dates = [];
+            dateMatches.forEach(match => {
+                const numbers = match[1].split(/\s+/).filter(d => d !== "--" && d !== "" && !isNaN(d));
+                dates = dates.concat(numbers.map(Number));
+            });
+
+            if (top) {
+                rawPairings.push({
+                    id: top[1],
+                    checkin: top[2],
+                    checkout: top[3],
+                    days: parseInt(top[4]),
+                    credit: credit ? credit[1] : "00:00",
+                    creditVal: credit ? parseInt(credit[1].replace(':','')) : 0,
+                    tafb: tafb ? tafb[1] : "00:00",
+                    layovers: airports.join(', '),
+                    activeDates: [...new Set(dates)]
+                });
             }
-            return null;
-        }).filter(p => p !== null);
-        applyFilters();
+        });
     }
 
-    function setLength(l) {
-        currentLength = l;
-        document.querySelectorAll('.day-btn').forEach(btn => btn.classList.remove('active'));
-        event.target.classList.add('active');
-        applyFilters();
-    }
-
-    function applyFilters() {
+    function processData() {
+        const len = document.getElementById('lenFilter').value;
+        const sort = document.getElementById('sortBy').value;
         const offDay = parseInt(document.getElementById('offDay').value);
-        const sortKey = document.getElementById('sortOrder').value;
 
         let filtered = rawPairings.filter(p => {
-            const lenMatch = (currentLength === 'all' || p.days == currentLength);
-            const dateMatch = isNaN(offDay) || !p.workedDates.includes(offDay);
-            return lenMatch && dateMatch;
+            const matchLen = (len === "all" || p.days == len);
+            const matchOff = isNaN(offDay) || !p.activeDates.includes(offDay);
+            return matchLen && matchOff;
         });
 
-        // Sorting Logic
         filtered.sort((a, b) => {
-            if(sortKey === 'credit') return b.creditVal - a.creditVal;
-            if(sortKey === 'checkin') return a.checkin.localeCompare(b.checkin);
-            return a[sortKey].toString().localeCompare(b[sortKey].toString());
+            if (sort === 'credit') return b.creditVal - a.creditVal;
+            if (sort === 'checkin') return a.checkin.localeCompare(b.checkin);
+            return a.id.localeCompare(b.id);
         });
 
         render(filtered);
@@ -153,18 +143,35 @@
 
     function render(list) {
         const container = document.getElementById('pairingList');
-        container.innerHTML = list.map(p => `
-            <div class="card">
-                <div class="card-header">
-                    <span class="id-badge">${p.id}</span>
-                    <span class="credit-badge">${p.credit}</span>
+        container.innerHTML = list.map(p => {
+            // Build the 1-30 calendar strip
+            let calendarStrip = "";
+            for (let i = 1; i <= 30; i++) {
+                const isActive = p.activeDates.includes(i) ? "active" : "";
+                calendarStrip += `<div class="cal-day ${isActive}">${i}</div>`;
+            }
+
+            return `
+            <div class="pairing-row">
+                <div class="id-tab"><div>18</div><div>${p.id.slice(-3)}</div></div>
+                <div class="main-info">
+                    <div class="info-top">
+                        <span><span class="info-label">Check-In</span><span class="info-value">${p.checkin}</span></span>
+                        <span><span class="info-label">Check-Out</span><span class="info-value">${p.checkout}</span></span>
+                        <span><span class="info-label">Credit Value</span><span class="info-value">${p.credit}</span></span>
+                        <span><span class="info-label">TAFB</span><span class="info-value">${p.tafb}</span></span>
+                    </div>
+                    <div style="font-size: 11px; color: #666;">
+                        ${p.layovers} | CA, FO | 73G
+                    </div>
                 </div>
-                <div style="font-weight:bold; color:var(--pbs-blue);">${p.days}-Day SAN Pairing</div>
-                <div class="times"><strong>REPORT:</strong> ${p.checkin} | <strong>RELEASE:</strong> ${p.checkout}</div>
-                <div class="times"><strong>TAFB:</strong> ${p.tafb}</div>
-                <div class="calendar">${p.workedDates.length > 0 ? 'Operating Dates: ' + p.workedDates.join(', ') : 'Daily/No Grid'}</div>
+                <div class="days-badge">0${p.days}<br>Days</div>
+                <div class="calendar-row">
+                    ${calendarStrip}
+                </div>
             </div>
-        `).join('');
+            `;
+        }).join('');
     }
 </script>
 </body>
