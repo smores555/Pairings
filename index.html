@@ -8,35 +8,43 @@
         :root { --nav-blue: #005eb8; --nav-header: #2c3e50; --nav-bg: #f5f7f9; --nav-border: #dbe4eb; --nav-active: #e0eefd; }
         body { font-family: 'Roboto', sans-serif; background: var(--nav-bg); margin: 0; font-size: 13px; color: #333; }
         
+        /* Top Navigation Bar */
         header { background: var(--nav-header); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #004a92; position: sticky; top: 0; z-index: 100; }
         .controls { background: white; border-bottom: 1px solid var(--nav-border); padding: 10px 20px; display: flex; gap: 20px; align-items: center; position: sticky; top: 41px; z-index: 99; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         
+        /* Pairing List Container */
         .pairing-list { max-width: 1200px; margin: 20px auto; display: flex; flex-direction: column; gap: 4px; padding: 0 10px; }
 
-        .pairing-container { border: 1px solid var(--nav-border); background: white; cursor: pointer; }
-        .pairing-container:hover { background: #fafafa; }
-        .pairing-row { display: grid; grid-template-columns: 80px 1fr 100px; min-height: 60px; }
+        /* Navblue Style Row Container */
+        .pairing-container { border: 1px solid var(--nav-border); background: white; cursor: pointer; transition: background 0.1s; }
+        .pairing-row { display: grid; grid-template-columns: 80px 1fr 100px; min-height: 60px; overflow: hidden; }
         
+        /* Blue Left Tab */
         .id-tab { background: var(--nav-blue); color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; border-right: 2px solid #004a92; }
         .id-prefix { font-size: 10px; opacity: 0.8; margin-bottom: -2px; }
 
+        /* Summary Info Section */
         .main-info { padding: 8px 15px; display: flex; flex-direction: column; justify-content: center; }
         .info-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
         .info-label { color: #777; font-size: 10px; text-transform: uppercase; margin-right: 4px; }
         .info-value { font-weight: bold; color: var(--nav-blue); font-size: 14px; }
 
+        /* Days Badge on Right */
         .days-badge { display: flex; align-items: center; justify-content: center; background: #ebf3fb; color: var(--nav-blue); font-weight: bold; border-left: 1px solid var(--nav-border); font-size: 11px; text-align: center; }
 
+        /* 1-30 Calendar Strip */
         .calendar-row { grid-column: 1 / 4; border-top: 1px solid #f0f0f0; display: flex; padding: 4px 10px; background: #fff; }
         .cal-day { flex: 1; text-align: center; font-size: 9px; color: #bbb; padding: 2px 0; }
         .cal-day.active { color: #000; font-weight: bold; background: var(--nav-active); border: 1px solid var(--nav-blue); border-radius: 50%; }
 
-        .details { display: none; padding: 20px; background: #fdfdfd; border-top: 2px solid var(--nav-blue); overflow-x: auto; }
+        /* Expanded Detailed View (The "PBS" Part) */
+        .details { display: none; padding: 20px; background: #ffffff; border-top: 2px solid var(--nav-blue); border-bottom: 2px solid var(--nav-border); }
         .details.show { display: block; }
-        .raw-text { font-family: 'Roboto Mono', monospace; font-size: 11px; line-height: 1.2; color: #444; white-space: pre; margin: 0; }
+        .raw-text { font-family: 'Roboto Mono', monospace; font-size: 11px; line-height: 1.3; color: #444; white-space: pre; margin: 0; background: #fdfdfd; padding: 15px; border: 1px solid #eee; }
 
+        /* Control Inputs */
         .file-label { background: var(--nav-blue); color: white; padding: 5px 12px; border-radius: 3px; cursor: pointer; font-weight: bold; font-size: 11px; }
-        select, input[type="number"] { padding: 4px 8px; border: 1px solid #ccc; border-radius: 3px; }
+        select, input[type="number"] { padding: 4px 8px; border: 1px solid #ccc; border-radius: 3px; font-family: inherit; }
     </style>
 </head>
 <body>
@@ -87,18 +95,20 @@
     });
 
     function parseText(text) {
-        [span_7](start_span)[span_8](start_span)[span_9](start_span)// Split specifically by the line of dashes in your 73G file[span_7](end_span)[span_8](end_span)[span_9](end_span)
+        // Split by the specific 100-character dash separator in your file
         const blocks = text.split(/----------------------------------------------------------------------------------------------------/);
         rawPairings = [];
 
         blocks.forEach(block => {
             const trimmed = block.trim();
-            [span_10](start_span)[span_11](start_span)[span_12](start_span)// This captures the 19000 ID, Check-In, Check-Out, and X-Day[span_10](end_span)[span_11](end_span)[span_12](end_span)
-            const top = trimmed.match(/(\d{5})\s+Check-In\s+(\d{2}:\d{2})\s+Check-Out\s+(\d{2}:\d{2})\s+(\d)-Day/);
-            const credit = trimmed.match(/Credit:\s+(\d{2,3}:\d{2})/);
-            const tafb = trimmed.match(/TAFB:\s+(\d{2,3}:\d{2})/);
+            if (!trimmed) return;
+
+            // Capture the ID, Check-In, Check-Out, and Length from the first line
+            const headerMatch = trimmed.match(/(\d{5})\s+Check-In\s+(\d{2}:\d{2})\s+Check-Out\s+(\d{2}:\d{2})\s+(\d)-Day/);
+            const creditMatch = trimmed.match(/Credit:\s+(\d{2,3}:\d{2})/);
+            const tafbMatch = trimmed.match(/TAFB:\s+(\d{2,3}:\d{2})/);
             
-            [span_13](start_span)[span_14](start_span)[span_15](start_span)[span_16](start_span)// Extract worked dates from the calendar section of each block[span_13](end_span)[span_14](end_span)[span_15](end_span)[span_16](end_span)
+            // Extract worked dates from the calendar section grid pipes | |
             const dateMatches = [...trimmed.matchAll(/\|\s*([\d\s-]{1,21})\s*\|/g)];
             let dates = [];
             dateMatches.forEach(match => {
@@ -106,15 +116,15 @@
                 dates = dates.concat(numbers.map(Number));
             });
 
-            if (top) {
+            if (headerMatch) {
                 rawPairings.push({
-                    id: top[1],
-                    checkin: top[2],
-                    checkout: top[3],
-                    days: parseInt(top[4]),
-                    credit: credit ? credit[1] : "00:00",
-                    creditVal: credit ? parseInt(credit[1].replace(':','')) : 0,
-                    tafb: tafb ? tafb[1] : "00:00",
+                    id: headerMatch[1],
+                    checkin: headerMatch[2],
+                    checkout: headerMatch[3],
+                    days: parseInt(headerMatch[4]),
+                    credit: creditMatch ? creditMatch[1] : "00:00",
+                    creditVal: creditMatch ? parseInt(creditMatch[1].replace(':','')) : 0,
+                    tafb: tafbMatch ? tafbMatch[1] : "00:00",
                     activeDates: [...new Set(dates)],
                     rawText: trimmed
                 });
@@ -143,9 +153,12 @@
         render(filtered);
     }
 
-    function toggle(element) {
-        const detail = element.querySelector('.details');
-        detail.classList.toggle('show');
+    function toggleDetails(id) {
+        const detailRow = document.getElementById(`details-${id}`);
+        const isShown = detailRow.classList.contains('show');
+        // Hide all others first for a cleaner look
+        document.querySelectorAll('.details').forEach(d => d.classList.remove('show'));
+        if (!isShown) detailRow.classList.add('show');
     }
 
     function render(list) {
@@ -158,9 +171,12 @@
             }
 
             return `
-            <div class="pairing-container" onclick="toggle(this)">
+            <div class="pairing-container" onclick="toggleDetails('${p.id}')">
                 <div class="pairing-row">
-                    <div class="id-tab"><span class="id-prefix">${p.id.slice(0,2)}</span><span>${p.id.slice(2)}</span></div>
+                    <div class="id-tab">
+                        <span class="id-prefix">${p.id.slice(0,2)}</span>
+                        <span>${p.id.slice(2)}</span>
+                    </div>
                     <div class="main-info">
                         <div class="info-grid">
                             <span><span class="info-label">CHECK-IN</span><span class="info-value">${p.checkin}</span></span>
@@ -172,7 +188,9 @@
                     <div class="days-badge">0${p.days}<br>DAYS</div>
                     <div class="calendar-row">${calendar}</div>
                 </div>
-                <div class="details"><pre class="raw-text">${p.rawText}</pre></div>
+                <div id="details-${p.id}" class="details">
+                    <pre class="raw-text">${p.rawText}</pre>
+                </div>
             </div>`;
         }).join('');
     }
