@@ -1,134 +1,171 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>PBS Pairing Sorter</title>
+    <meta charset="UTF-8">
+    <title>PBS | SAN 73G Pairing Sorter</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        :root { --pbs-blue: #005596; --pbs-grey: #f4f7f9; }
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--pbs-grey); margin: 0; padding: 20px; }
-        header { background: var(--pbs-blue); color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-        .controls { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; flex-wrap: wrap; gap: 15px; align-items: center; }
-        button { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; background: #e0e0e0; transition: 0.2s; }
-        button:hover { background: #d0d0d0; }
-        button.active { background: var(--pbs-blue); color: white; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background: #eee; cursor: pointer; position: sticky; top: 0; }
-        .day-tag { padding: 4px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold; }
-        .d1 { background: #d1fae5; color: #065f46; } .d2 { background: #fef3c7; color: #92400e; }
-        .d3 { background: #fee2e2; color: #991b1b; } .d4 { background: #e0e7ff; color: #3730a3; }
+        :root { --pbs-blue: #00457C; --pbs-yellow: #FFD200; --pbs-grey: #F4F4F4; }
+        body { font-family: 'Montserrat', sans-serif; background: var(--pbs-grey); margin: 0; color: #333; }
+        
+        /* PBS Style Header */
+        header { background: var(--pbs-blue); color: white; padding: 25px; border-bottom: 6px solid var(--pbs-yellow); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        header h1 { margin: 0; font-size: 24px; letter-spacing: 1px; }
+
+        .dashboard { display: grid; grid-template-columns: 300px 1fr; gap: 20px; padding: 20px; max-width: 1400px; margin: auto; }
+
+        /* Sidebar Sorter */
+        .sidebar { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); height: fit-content; }
+        .filter-group { margin-bottom: 25px; }
+        .filter-group h3 { font-size: 14px; text-transform: uppercase; color: var(--pbs-blue); border-bottom: 2px solid var(--pbs-grey); padding-bottom: 5px; }
+        
+        select, input { width: 100%; padding: 10px; margin-top: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        .btn-group { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+        .day-btn { flex: 1; padding: 8px; border: 1px solid var(--pbs-blue); background: white; cursor: pointer; font-weight: bold; }
+        .day-btn.active { background: var(--pbs-blue); color: white; }
+
+        /* Pairing Cards */
+        .pairing-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 15px; }
+        .card { background: white; border-left: 8px solid var(--pbs-blue); padding: 15px; border-radius: 4px; position: relative; transition: transform 0.2s; }
+        .card:hover { transform: translateY(-3px); border-left-color: var(--pbs-yellow); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .id-badge { background: var(--pbs-blue); color: white; padding: 4px 8px; font-weight: bold; border-radius: 3px; }
+        .credit-badge { color: var(--pbs-blue); font-weight: bold; font-size: 18px; }
+        .times { font-size: 13px; color: #666; margin: 5px 0; }
+        .calendar { font-family: monospace; font-size: 11px; background: #eee; padding: 5px; border-radius: 3px; margin-top: 10px; }
     </style>
 </head>
 <body>
 
 <header>
-    <h1>Airline Pairing Sorter</h1>
-    <p>Upload your <strong>pairing data.txt</strong> to begin sorting.</p>
+    <h1>PUBLIC BROADCASTING SYSTEM | <span style="font-weight:400">SAN DIEGO PAIRING EXPLORER</span></h1>
 </header>
 
-<div class="controls">
-    <input type="file" id="fileInput" accept=".txt">
-    
-    <div>
-        <strong>Filter Length:</strong>
-        <button onclick="filterDays(1)">1 Day</button>
-        <button onclick="filterDays(2)">2 Day</button>
-        <button onclick="filterDays(3)">3 Day</button>
-        <button onclick="filterDays(4)">4 Day</button>
-        <button onclick="resetFilters()">Show All</button>
+<div class="dashboard">
+    <div class="sidebar">
+        <div class="filter-group">
+            <h3>1. Load Data</h3>
+            <input type="file" id="fileInput" accept=".txt">
+        </div>
+
+        <div class="filter-group">
+            <h3>2. Trip Length</h3>
+            <div class="btn-group">
+                <button class="day-btn" onclick="setLength(1)">1D</button>
+                <button class="day-btn" onclick="setLength(2)">2D</button>
+                <button class="day-btn" onclick="setLength(3)">3D</button>
+                <button class="day-btn" onclick="setLength(4)">4D</button>
+                <button class="day-btn active" onclick="setLength('all')">ALL</button>
+            </div>
+        </div>
+
+        <div class="filter-group">
+            <h3>3. Sort Results</h3>
+            <select id="sortOrder" onchange="applyFilters()">
+                <option value="id">Pairing ID</option>
+                <option value="credit">Total Credit (High to Low)</option>
+                <option value="checkin">Earlier Check-In</option>
+                <option value="tafb">TAFB (Length of Trip)</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <h3>4. Days Off Filter</h3>
+            <p style="font-size: 11px;">Hide trips touching this date:</p>
+            <input type="number" id="offDay" min="1" max="30" placeholder="Enter Day (e.g. 15)" oninput="applyFilters()">
+        </div>
     </div>
 
-    <div>
-        <strong>Sort By:</strong>
-        <select id="sortSelect" onchange="sortData(this.value)">
-            <option value="id">Pairing ID</option>
-            <option value="credit">Total Credit</option>
-            <option value="checkin">Check-In Time</option>
-            <option value="checkout">Check-Out Time</option>
-        </select>
-    </div>
+    <div class="pairing-list" id="pairingList">
+        </div>
 </div>
 
-<table id="pairingTable">
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Days</th>
-            <th>Credit</th>
-            <th>Check-In</th>
-            <th>Check-Out</th>
-        </tr>
-    </thead>
-    <tbody id="tableBody"></tbody>
-</table>
-
 <script>
-    let rawData = [];
-    let filteredData = [];
+    let rawPairings = [];
+    let currentLength = 'all';
 
     document.getElementById('fileInput').addEventListener('change', function(e) {
-        const file = e.target.files[0];
         const reader = new FileReader();
-        reader.onload = function(progressEvent) {
-            parseText(progressEvent.target.result);
-        };
-        reader.readAsText(file);
+        reader.onload = (event) => parsePairings(event.target.result);
+        reader.readAsText(e.target.files[0]);
     });
 
-    function parseText(text) {
-        const lines = text.split('\n');
-        rawData = lines.map(line => {
-            // This regex tries to find ID, Days, Credit (00:00), and Times
-            // You might need to adjust this based on your specific file format!
-            const parts = line.trim().split(/\s+/);
-            if (parts.length < 3) return null;
+    function parsePairings(text) {
+        // Splitting by the long dashed line in your file
+        const blocks = text.split('----------------------------------------------------------------------------------------------------');
+        rawPairings = blocks.map(block => {
+            const idMatch = block.match(/(\d{5})\s+Check-In\s+(\d{2}:\d{2})\s+Check-Out\s+(\d{2}:\d{2})\s+(\d)-Day/);
+            const creditMatch = block.match(/Credit:\s+(\d{3}:\d{2})/);
+            const tafbMatch = block.match(/TAFB:\s+(\d{3}:\d{2})/);
+            
+            // Extract the date numbers from the calendar grid
+            const dateMatches = block.match(/\|\s*([\d\s-]{1,30})\s*\|/g);
+            let workedDates = [];
+            if(dateMatches) {
+                workedDates = dateMatches.map(line => line.replace(/[|]/g, '').trim().split(/\s+/)).flat()
+                             .filter(d => d !== '--' && d !== "").map(Number);
+            }
 
-            return {
-                id: parts[0],
-                days: parseInt(parts[1]) || 1,
-                credit: parts[2] || "0:00",
-                checkin: parts[3] || "00:00",
-                checkout: parts[4] || "00:00",
-                raw: line
-            };
-        }).filter(item => item !== null);
-
-        filteredData = [...rawData];
-        renderTable();
+            if (idMatch) {
+                return {
+                    id: idMatch[1],
+                    checkin: idMatch[2],
+                    checkout: idMatch[3],
+                    days: parseInt(idMatch[4]),
+                    credit: creditMatch ? creditMatch[1] : "000:00",
+                    creditVal: creditMatch ? parseInt(creditMatch[1].replace(':','')) : 0,
+                    tafb: tafbMatch ? tafbMatch[1] : "000:00",
+                    workedDates: workedDates,
+                    rawCalendar: dateMatches ? dateMatches.join('<br>') : ""
+                };
+            }
+            return null;
+        }).filter(p => p !== null);
+        applyFilters();
     }
 
-    function renderTable() {
-        const body = document.getElementById('tableBody');
-        body.innerHTML = filteredData.map(p => `
-            <tr>
-                <td><strong>${p.id}</strong></td>
-                <td><span class="day-tag d${p.days}">${p.days} Day</span></td>
-                <td>${p.credit}</td>
-                <td>${p.checkin}</td>
-                <td>${p.checkout}</td>
-            </tr>
+    function setLength(l) {
+        currentLength = l;
+        document.querySelectorAll('.day-btn').forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+        applyFilters();
+    }
+
+    function applyFilters() {
+        const offDay = parseInt(document.getElementById('offDay').value);
+        const sortKey = document.getElementById('sortOrder').value;
+
+        let filtered = rawPairings.filter(p => {
+            const lenMatch = (currentLength === 'all' || p.days == currentLength);
+            const dateMatch = isNaN(offDay) || !p.workedDates.includes(offDay);
+            return lenMatch && dateMatch;
+        });
+
+        // Sorting Logic
+        filtered.sort((a, b) => {
+            if(sortKey === 'credit') return b.creditVal - a.creditVal;
+            if(sortKey === 'checkin') return a.checkin.localeCompare(b.checkin);
+            return a[sortKey].toString().localeCompare(b[sortKey].toString());
+        });
+
+        render(filtered);
+    }
+
+    function render(list) {
+        const container = document.getElementById('pairingList');
+        container.innerHTML = list.map(p => `
+            <div class="card">
+                <div class="card-header">
+                    <span class="id-badge">${p.id}</span>
+                    <span class="credit-badge">${p.credit}</span>
+                </div>
+                <div style="font-weight:bold; color:var(--pbs-blue);">${p.days}-Day SAN Pairing</div>
+                <div class="times"><strong>REPORT:</strong> ${p.checkin} | <strong>RELEASE:</strong> ${p.checkout}</div>
+                <div class="times"><strong>TAFB:</strong> ${p.tafb}</div>
+                <div class="calendar">${p.workedDates.length > 0 ? 'Operating Dates: ' + p.workedDates.join(', ') : 'Daily/No Grid'}</div>
+            </div>
         `).join('');
     }
-
-    function filterDays(d) {
-        filteredData = rawData.filter(p => p.days === d);
-        renderTable();
-    }
-
-    function resetFilters() {
-        filteredData = [...rawData];
-        renderTable();
-    }
-
-    function sortData(key) {
-        filteredData.sort((a, b) => {
-            if (key === 'credit' || key === 'checkin' || key === 'checkout') {
-                return a[key].localeCompare(b[key]);
-            }
-            return a[key] - b[key];
-        });
-        renderTable();
-    }
 </script>
-
 </body>
 </html>
