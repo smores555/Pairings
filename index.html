@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PBS Pairing Sorter</title>
+    <style>
+        :root { --pbs-blue: #005596; --pbs-grey: #f4f7f9; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--pbs-grey); margin: 0; padding: 20px; }
+        header { background: var(--pbs-blue); color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+        .controls { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; flex-wrap: wrap; gap: 15px; align-items: center; }
+        button { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; background: #e0e0e0; transition: 0.2s; }
+        button:hover { background: #d0d0d0; }
+        button.active { background: var(--pbs-blue); color: white; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #eee; cursor: pointer; position: sticky; top: 0; }
+        .day-tag { padding: 4px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold; }
+        .d1 { background: #d1fae5; color: #065f46; } .d2 { background: #fef3c7; color: #92400e; }
+        .d3 { background: #fee2e2; color: #991b1b; } .d4 { background: #e0e7ff; color: #3730a3; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Airline Pairing Sorter</h1>
+    <p>Upload your <strong>pairing data.txt</strong> to begin sorting.</p>
+</header>
+
+<div class="controls">
+    <input type="file" id="fileInput" accept=".txt">
+    
+    <div>
+        <strong>Filter Length:</strong>
+        <button onclick="filterDays(1)">1 Day</button>
+        <button onclick="filterDays(2)">2 Day</button>
+        <button onclick="filterDays(3)">3 Day</button>
+        <button onclick="filterDays(4)">4 Day</button>
+        <button onclick="resetFilters()">Show All</button>
+    </div>
+
+    <div>
+        <strong>Sort By:</strong>
+        <select id="sortSelect" onchange="sortData(this.value)">
+            <option value="id">Pairing ID</option>
+            <option value="credit">Total Credit</option>
+            <option value="checkin">Check-In Time</option>
+            <option value="checkout">Check-Out Time</option>
+        </select>
+    </div>
+</div>
+
+<table id="pairingTable">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Days</th>
+            <th>Credit</th>
+            <th>Check-In</th>
+            <th>Check-Out</th>
+        </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+</table>
+
+<script>
+    let rawData = [];
+    let filteredData = [];
+
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = function(progressEvent) {
+            parseText(progressEvent.target.result);
+        };
+        reader.readAsText(file);
+    });
+
+    function parseText(text) {
+        const lines = text.split('\n');
+        rawData = lines.map(line => {
+            // This regex tries to find ID, Days, Credit (00:00), and Times
+            // You might need to adjust this based on your specific file format!
+            const parts = line.trim().split(/\s+/);
+            if (parts.length < 3) return null;
+
+            return {
+                id: parts[0],
+                days: parseInt(parts[1]) || 1,
+                credit: parts[2] || "0:00",
+                checkin: parts[3] || "00:00",
+                checkout: parts[4] || "00:00",
+                raw: line
+            };
+        }).filter(item => item !== null);
+
+        filteredData = [...rawData];
+        renderTable();
+    }
+
+    function renderTable() {
+        const body = document.getElementById('tableBody');
+        body.innerHTML = filteredData.map(p => `
+            <tr>
+                <td><strong>${p.id}</strong></td>
+                <td><span class="day-tag d${p.days}">${p.days} Day</span></td>
+                <td>${p.credit}</td>
+                <td>${p.checkin}</td>
+                <td>${p.checkout}</td>
+            </tr>
+        `).join('');
+    }
+
+    function filterDays(d) {
+        filteredData = rawData.filter(p => p.days === d);
+        renderTable();
+    }
+
+    function resetFilters() {
+        filteredData = [...rawData];
+        renderTable();
+    }
+
+    function sortData(key) {
+        filteredData.sort((a, b) => {
+            if (key === 'credit' || key === 'checkin' || key === 'checkout') {
+                return a[key].localeCompare(b[key]);
+            }
+            return a[key] - b[key];
+        });
+        renderTable();
+    }
+</script>
+
+</body>
+</html>
