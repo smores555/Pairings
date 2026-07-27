@@ -6,14 +6,35 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Roboto+Mono&display=swap" rel="stylesheet">
     <style>
         :root { --nav-blue: #005eb8; --nav-header: #2c3e50; --nav-bg: #f5f7f9; --nav-border: #dbe4eb; --nav-active: #e0eefd; }
+        * { box-sizing: border-box; }
         body { font-family: 'Roboto', sans-serif; background: var(--nav-bg); margin: 0; font-size: 13px; color: #333; }
         
         /* Top Navigation Bar */
         header { background: var(--nav-header); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #004a92; position: sticky; top: 0; z-index: 100; }
-        .controls { background: white; border-bottom: 1px solid var(--nav-border); padding: 10px 20px; display: flex; gap: 20px; align-items: center; position: sticky; top: 41px; z-index: 99; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        
+        /* Main layout with sidebar */
+        .main-container { display: flex; min-height: calc(100vh - 45px); }
+        
+        /* Left content area */
+        .content-area { flex: 1; min-width: 0; overflow-y: auto; }
+        
+        /* Top controls bar */
+        .controls { background: white; border-bottom: 1px solid var(--nav-border); padding: 10px 20px; display: flex; gap: 15px; align-items: center; position: sticky; top: 0; z-index: 99; box-shadow: 0 2px 4px rgba(0,0,0,0.05); flex-wrap: wrap; }
+        
+        /* Control Group */
+        .control-group { display: flex; gap: 8px; align-items: center; white-space: nowrap; }
+        
+        /* Right Sidebar */
+        .sidebar { width: 220px; background: white; border-left: 1px solid var(--nav-border); padding: 15px; overflow-y: auto; position: sticky; top: 0; max-height: 100vh; }
+        .sidebar-section { margin-bottom: 20px; }
+        .sidebar-title { font-weight: bold; color: var(--nav-header); font-size: 12px; text-transform: uppercase; margin-bottom: 8px; border-bottom: 2px solid var(--nav-blue); padding-bottom: 5px; }
+        .sidebar-option { margin: 6px 0; }
+        .sidebar-option input[type="checkbox"] { margin-right: 6px; cursor: pointer; }
+        .sidebar-option label { cursor: pointer; font-size: 12px; user-select: none; }
+        .sidebar-option input[type="number"] { width: 60px; padding: 4px 6px; }
         
         /* Pairing List Container */
-        .pairing-list { max-width: 1200px; margin: 20px auto; display: flex; flex-direction: column; gap: 4px; padding: 0 10px; }
+        .pairing-list { display: flex; flex-direction: column; gap: 4px; padding: 20px; max-width: 1400px; margin: 0 auto; }
 
         /* Navblue Style Row Container */
         .pairing-container { border: 1px solid var(--nav-border); background: white; cursor: pointer; transition: background 0.1s; }
@@ -32,72 +53,121 @@
         /* Days Badge on Right */
         .days-badge { display: flex; align-items: center; justify-content: center; background: #ebf3fb; color: var(--nav-blue); font-weight: bold; border-left: 1px solid var(--nav-border); font-size: 11px; text-align: center; }
 
-        /* 1-30 Calendar Strip */
+        /* 1-31 Calendar Strip */
         .calendar-row { grid-column: 1 / 4; border-top: 1px solid #f0f0f0; display: flex; padding: 4px 10px; background: #fff; }
         .cal-day { flex: 1; text-align: center; font-size: 9px; color: #bbb; padding: 2px 0; }
         .cal-day.active { color: #000; font-weight: bold; background: var(--nav-active); border: 1px solid var(--nav-blue); border-radius: 50%; }
 
-        /* Expanded Detailed View (The "PBS" Part) */
+        /* Expanded Detailed View */
         .details { display: none; padding: 20px; background: #ffffff; border-top: 2px solid var(--nav-blue); border-bottom: 2px solid var(--nav-border); }
         .details.show { display: block; }
         .raw-text { font-family: 'Roboto Mono', monospace; font-size: 11px; line-height: 1.3; color: #444; white-space: pre; margin: 0; background: #fdfdfd; padding: 15px; border: 1px solid #eee; }
+        
+        /* Layover info section */
+        .layover-info { margin: 10px 0; padding: 10px; background: #f0f7ff; border-left: 4px solid var(--nav-blue); }
+        .layover-item { margin: 5px 0; font-size: 12px; }
+        .layover-airport { font-weight: bold; color: var(--nav-blue); }
+        .layover-duration { color: #999; font-size: 11px; }
 
         /* Control Inputs */
         .file-label { background: var(--nav-blue); color: white; padding: 5px 12px; border-radius: 3px; cursor: pointer; font-weight: bold; font-size: 11px; }
-        select, input[type="number"] { padding: 4px 8px; border: 1px solid #ccc; border-radius: 3px; font-family: inherit; }
+        select, input[type="number"] { padding: 4px 8px; border: 1px solid #ccc; border-radius: 3px; font-family: inherit; font-size: 12px; }
     </style>
 </head>
 <body>
 
 <header>
-    <div><strong>BID PERIOD:</strong> 2026-06-01 TO 2026-06-30</div>
+    <div><strong>BID PERIOD:</strong> 2026-08-01 TO 2026-08-31</div>
     <div id="pairingCount">Pairings (0)</div>
 </header>
 
-<div class="controls">
-    <label class="file-label">LOAD DATA<input type="file" id="fileInput" accept=".txt" style="display:none;"></label>
-    <div>
-        <span class="info-label">LENGTH:</span>
-        <select id="lenFilter" onchange="processData()">
-            <option value="all">ALL</option>
-            <option value="1">1 DAY</option>
-            <option value="2">2 DAY</option>
-            <option value="3">3 DAY</option>
-            <option value="4">4 DAY</option>
-        </select>
+<div class="main-container">
+    <div class="content-area">
+        <div class="controls">
+            <div class="control-group">
+                <label class="file-label">LOAD DATA<input type="file" id="fileInput" accept=".txt" style="display:none;"></label>
+            </div>
+            
+            <div class="control-group">
+                <span class="info-label">LENGTH:</span>
+                <select id="lenFilter" onchange="processData()">
+                    <option value="all">ALL</option>
+                    <option value="1">1 DAY</option>
+                    <option value="2">2 DAY</option>
+                    <option value="3">3 DAY</option>
+                    <option value="4">4+ DAY</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <span class="info-label">CHECK-IN:</span>
+                <select id="checkinFilter" onchange="processData()">
+                    <option value="all">ALL TIMES</option>
+                    <option value="early">BEFORE 06:00</option>
+                    <option value="mid">06:00 - 10:00</option>
+                    <option value="late">AFTER 10:00</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <span class="info-label">CHECK-OUT:</span>
+                <select id="checkoutFilter" onchange="processData()">
+                    <option value="all">ALL TIMES</option>
+                    <option value="early">BEFORE 12:00</option>
+                    <option value="mid">12:00 - 18:00</option>
+                    <option value="late">AFTER 18:00</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <span class="info-label">SORT:</span>
+                <select id="sortBy" onchange="processData()">
+                    <option value="id">PAIRING #</option>
+                    <option value="credit">CREDIT VALUE</option>
+                    <option value="checkin">CHECK-IN TIME</option>
+                    <option value="checkout">CHECK-OUT TIME</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="pairing-list" id="pairingList"></div>
     </div>
-    <div>
-        <span class="info-label">SORT:</span>
-        <select id="sortBy" onchange="processData()">
-            <option value="id">PAIRING #</option>
-            <option value="credit">CREDIT VALUE</option>
-            <option value="checkin">CHECK-IN TIME</option>
-        </select>
-    </div>
-    <div>
-        <span class="info-label">HIDE ON DATE:</span>
-        <input type="number" id="offDay" min="1" max="30" style="width: 45px;" oninput="processData()">
+    
+    <!-- Right Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-section">
+            <div class="sidebar-title">Layover Airports</div>
+            <div id="airportCheckboxes" style="max-height: 400px; overflow-y: auto;"></div>
+        </div>
+        
+        <div class="sidebar-section">
+            <div class="sidebar-title">Hide On Date</div>
+            <div class="sidebar-option">
+                <input type="number" id="offDay" min="1" max="31" placeholder="Day #" oninput="processData()">
+            </div>
+        </div>
     </div>
 </div>
 
-<div class="pairing-list" id="pairingList"></div>
-
 <script>
     let rawPairings = [];
+    let allAirports = [];
+    let selectedAirports = new Set();
 
     document.getElementById('fileInput').addEventListener('change', function(e) {
         const reader = new FileReader();
         reader.onload = (event) => {
             parseText(event.target.result);
+            buildAirportCheckboxes();
             processData();
         };
         reader.readAsText(e.target.files[0]);
     });
 
     function parseText(text) {
-        // Split by the specific 100-character dash separator in your file
         const blocks = text.split(/----------------------------------------------------------------------------------------------------/);
         rawPairings = [];
+        allAirports = [];
 
         blocks.forEach(block => {
             const trimmed = block.trim();
@@ -108,12 +178,31 @@
             const creditMatch = trimmed.match(/Credit:\s+(\d{2,3}:\d{2})/);
             const tafbMatch = trimmed.match(/TAFB:\s+(\d{2,3}:\d{2})/);
             
-            // Extract worked dates from the calendar section grid pipes | |
+            // Extract worked dates from the calendar section
             const dateMatches = [...trimmed.matchAll(/\|\s*([\d\s-]{1,21})\s*\|/g)];
             let dates = [];
             dateMatches.forEach(match => {
                 const numbers = match[1].split(/\s+/).filter(d => d !== "--" && d !== "" && !isNaN(d));
                 dates = dates.concat(numbers.map(Number));
+            });
+
+            // Extract layovers (hotel stays) with airport codes
+            const layovers = [];
+            const layoverLines = trimmed.match(/^\s+[A-Z]{3}\s+\d{1,3}:\d{2}\s+.+$/gm) || [];
+            layoverLines.forEach(line => {
+                const match = line.match(/^\s+([A-Z]{3})\s+(\d{1,3}:\d{2})\s+(.+)$/);
+                if (match) {
+                    const airport = match[1];
+                    layovers.push({
+                        airport: airport,
+                        duration: match[2],
+                        hotel: match[3].trim()
+                    });
+                    // Track all airports
+                    if (!allAirports.includes(airport)) {
+                        allAirports.push(airport);
+                    }
+                }
             });
 
             if (headerMatch) {
@@ -126,26 +215,93 @@
                     creditVal: creditMatch ? parseInt(creditMatch[1].replace(':','')) : 0,
                     tafb: tafbMatch ? tafbMatch[1] : "00:00",
                     activeDates: [...new Set(dates)],
+                    layovers: layovers,
+                    layoverCount: layovers.length,
+                    layoverAirports: layovers.map(lo => lo.airport),
                     rawText: trimmed
                 });
             }
         });
+
+        // Sort airports alphabetically
+        allAirports.sort();
+    }
+
+    function buildAirportCheckboxes() {
+        const container = document.getElementById('airportCheckboxes');
+        container.innerHTML = '';
+        
+        allAirports.forEach(airport => {
+            const div = document.createElement('div');
+            div.className = 'sidebar-option';
+            div.innerHTML = `
+                <input type="checkbox" id="airport-${airport}" value="${airport}" onchange="toggleAirport('${airport}', this.checked)">
+                <label for="airport-${airport}">${airport}</label>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function toggleAirport(airport, checked) {
+        if (checked) {
+            selectedAirports.add(airport);
+        } else {
+            selectedAirports.delete(airport);
+        }
+        processData();
+    }
+
+    function timeToMinutes(timeStr) {
+        const [h, m] = timeStr.split(':').map(Number);
+        return h * 60 + m;
     }
 
     function processData() {
         const len = document.getElementById('lenFilter').value;
+        const checkin = document.getElementById('checkinFilter').value;
+        const checkout = document.getElementById('checkoutFilter').value;
         const sort = document.getElementById('sortBy').value;
         const offDay = parseInt(document.getElementById('offDay').value);
 
         let filtered = rawPairings.filter(p => {
-            const matchLen = (len === "all" || p.days == len);
+            // Length filter
+            const matchLen = (len === "all" || (len === "4+" ? p.days >= 4 : p.days == len));
+            
+            // Airport filter (if any airports selected, pairing must have one of them)
+            let matchAirport = true;
+            if (selectedAirports.size > 0) {
+                matchAirport = p.layoverAirports.some(airport => selectedAirports.has(airport));
+            }
+            
+            // Check-in filter
+            let matchCheckin = true;
+            if (checkin !== "all") {
+                const checkinMins = timeToMinutes(p.checkin);
+                if (checkin === "early") matchCheckin = checkinMins < 360; // before 06:00
+                else if (checkin === "mid") matchCheckin = checkinMins >= 360 && checkinMins < 600; // 06:00-10:00
+                else if (checkin === "late") matchCheckin = checkinMins >= 600; // after 10:00
+            }
+            
+            // Check-out filter
+            let matchCheckout = true;
+            if (checkout !== "all") {
+                const checkoutMins = timeToMinutes(p.checkout);
+                if (checkout === "early") matchCheckout = checkoutMins < 720; // before 12:00
+                else if (checkout === "mid") matchCheckout = checkoutMins >= 720 && checkoutMins < 1080; // 12:00-18:00
+                else if (checkout === "late") matchCheckout = checkoutMins >= 1080; // after 18:00
+            }
+            
+            // Off-day filter
             const matchOff = isNaN(offDay) || !p.activeDates.includes(offDay);
-            return matchLen && matchOff;
+            
+            return matchLen && matchAirport && matchCheckin && matchCheckout && matchOff;
         });
 
+        // Sorting
         filtered.sort((a, b) => {
             if (sort === 'credit') return b.creditVal - a.creditVal;
-            if (sort === 'checkin') return a.checkin.localeCompare(b.checkin);
+            if (sort === 'checkin') return timeToMinutes(a.checkin) - timeToMinutes(b.checkin);
+            if (sort === 'checkout') return timeToMinutes(a.checkout) - timeToMinutes(b.checkout);
             return a.id.localeCompare(b.id);
         });
 
@@ -156,7 +312,6 @@
     function toggleDetails(id) {
         const detailRow = document.getElementById(`details-${id}`);
         const isShown = detailRow.classList.contains('show');
-        // Hide all others first for a cleaner look
         document.querySelectorAll('.details').forEach(d => d.classList.remove('show'));
         if (!isShown) detailRow.classList.add('show');
     }
@@ -165,9 +320,21 @@
         const container = document.getElementById('pairingList');
         container.innerHTML = list.map(p => {
             let calendar = "";
-            for (let i = 1; i <= 30; i++) {
+            for (let i = 1; i <= 31; i++) {
                 const active = p.activeDates.includes(i) ? "active" : "";
                 calendar += `<div class="cal-day ${active}">${i}</div>`;
+            }
+
+            // Build layover info
+            let layoverInfo = "";
+            if (p.layovers.length > 0) {
+                layoverInfo = `<div class="layover-info"><strong>Layovers:</strong>`;
+                p.layovers.forEach(lo => {
+                    layoverInfo += `<div class="layover-item"><span class="layover-airport">${lo.airport}</span> - ${lo.hotel} <span class="layover-duration">(${lo.duration})</span></div>`;
+                });
+                layoverInfo += `</div>`;
+            } else {
+                layoverInfo = `<div class="layover-info"><strong>No Layovers</strong> - Turnaround Only</div>`;
             }
 
             return `
@@ -182,13 +349,14 @@
                             <span><span class="info-label">CHECK-IN</span><span class="info-value">${p.checkin}</span></span>
                             <span><span class="info-label">CHECK-OUT</span><span class="info-value">${p.checkout}</span></span>
                             <span><span class="info-label">CREDIT</span><span class="info-value">${p.credit}</span></span>
-                            <span><span class="info-label">TAFB</span><span class="info-value">${p.tafb}</span></span>
+                            <span><span class="info-label">LAYOVERS</span><span class="info-value">${p.layoverCount}</span></span>
                         </div>
                     </div>
                     <div class="days-badge">0${p.days}<br>DAYS</div>
                     <div class="calendar-row">${calendar}</div>
                 </div>
                 <div id="details-${p.id}" class="details">
+                    ${layoverInfo}
                     <pre class="raw-text">${p.rawText}</pre>
                 </div>
             </div>`;
