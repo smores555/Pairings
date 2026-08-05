@@ -381,7 +381,10 @@
         
         console.log(`Parsed ${rawPairings.length} pairings`);
         if (rawPairings.length > 0) {
-            console.log('First pairing:', rawPairings[0]);
+            console.log('First 5 pairings:');
+            rawPairings.slice(0, 5).forEach(p => {
+                console.log(`  ${p.id}: ${p.days}-day, Credit: ${p.credit}, Duty: ${p.dutyTime}, Flights: ${p.flightCount}, Layovers: ${p.layoverAirports.join(',')}`);
+            });
         }
     }
 
@@ -470,7 +473,18 @@
         const maxTafbVal = maxTafbInput ? timeToMinutes(maxTafbInput) : 999999;
 
         let filtered = rawPairings.filter(p => {
-            const matchLen = (len === "all" || (len === "4+" ? p.days >= 4 : p.days == len));
+            // Fix day filter: compare as numbers, not strings
+            let matchLen = true;
+            if (len !== "all") {
+                const pDays = parseInt(p.days);
+                const filterDays = parseInt(len);
+                if (len === "4+") {
+                    matchLen = pDays >= 4;
+                } else {
+                    matchLen = pDays === filterDays;
+                }
+            }
+            
             const matchCheckin = timeToMinutes(p.checkin) >= minCheckinVal;
             const matchCheckout = timeToMinutes(p.checkout) <= maxCheckoutVal;
             
