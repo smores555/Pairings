@@ -244,17 +244,26 @@
         const reader = new FileReader();
         reader.onload = (e) => {
             const text = e.target.result;
+            console.log('File loaded, text length:', text.length);
+            console.log('First 200 chars:', text.substring(0, 200));
             parsePairings(text);
+            console.log(`Successfully parsed ${rawPairings.length} pairings`);
             const container = document.getElementById('airportCheckboxes');
             container.innerHTML = '';
             selectedAirports.clear();
             processData();
+        };
+        reader.onerror = (e) => {
+            console.error('File read error:', e);
+            alert('Error reading file: ' + e);
         };
         reader.readAsText(file);
     }
 
     function parsePairings(text) {
         rawPairings = [];
+        // Normalize line endings (handle both \r\n and \n)
+        text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
         const lines = text.split('\n');
         let i = 0;
 
@@ -262,12 +271,14 @@
             const line = lines[i];
             const trimmed = line.trim();
             
-            if (!trimmed || trimmed.match(/^---/)) {
+            // Skip empty lines and separator lines
+            if (!trimmed || trimmed.match(/^-+$/)) {
                 i++;
                 continue;
             }
 
-            const match = trimmed.match(/^(\d{5})\s+Check-in\s+(\d{2}:\d{2})\s+Check-out\s+(\d{2}:\d{2})/);
+            // Match pairing header: "18000  Check-In 05:00   Check-Out 17:37"
+            const match = trimmed.match(/^(\d{5})\s+Check-In\s+(\d{1,2}:\d{2})\s+Check-Out\s+(\d{1,2}:\d{2})/i);
             if (!match) {
                 i++;
                 continue;
@@ -291,57 +302,68 @@
             rawText = trimmed + '\n';
             i++;
 
-            // Parse pairing details until next pairing
+            // Parse pairing details until next pairing or end of file
             while (i < lines.length) {
                 const l = lines[i];
                 const ltrim = l.trim();
                 
                 // Stop at next pairing or dashes
-                if (ltrim.match(/^---/) || ltrim.match(/^\d{5}\s+Check-in/)) {
+                if (ltrim.match(/^-+$/) || ltrim.match(/^\d{5}\s+Check-In/i)) {
                     break;
                 }
 
                 rawText += l + '\n';
 
-                // Extract number of days
-                if (ltrim.includes('-Day')) {
-                    const dayMatch = ltrim.match(/(\d+)-Day/);
+                // Extract number of days (e.g., "4-Day", "2-Day")
+                if (ltrim.match(/\d+-Day/i)) {
+                    const dayMatch = ltrim.match(/(\d+)-Day/i);
                     if (dayMatch) days = parseInt(dayMatch[1]);
                 }
 
-                // Extract credit and TAFB values
-                if (ltrim.match(/^Credit:/)) {
-                    const creditMatch = ltrim.match(/Credit:\s*(\d{2}:\d{2})/);
-                    if (creditMatch) credit = creditMatch[1];
-                    creditVal = timeToMinutes(credit);
+                // Extract credit value (e.g., "Credit: 024:45")
+                if (ltrim.match(/^Credit:/i)) {
+                    const creditMatch = ltrim.match(/Credit:\s*(\d{1,2}:\d{2})/i);
+                    if (creditMatch) {
+                        credit = creditMatch[1];
+                        creditVal = timeToMinutes(credit);
+                    }
                 }
 
-                if (ltrim.match(/^TAFB:/)) {
-                    const tafbMatch = ltrim.match(/TAFB:\s*(\d{2}:\d{2})/);
-                    if (tafbMatch) tafb = tafbMatch[1];
-                    tafbVal = timeToMinutes(tafb);
+                // Extract TAFB (e.g., "TAFB: 084:37")
+                if (ltrim.match(/^TAFB:/i)) {
+                    const tafbMatch = ltrim.match(/TAFB:\s*(\d{1,2}:\d{2})/i);
+                    if (tafbMatch) {
+                        tafb = tafbMatch[1];
+                        tafbVal = timeToMinutes(tafb);
+                    }
                 }
 
-                // Extract max duty time (rightmost time value in credit line with 3+ times)
-                if (ltrim.match(/^Credit:/) && ltrim.split(/\s+/).filter(x => x.match(/\d{2}:\d{2}/)).length >= 2) {
-                    const times = ltrim.match(/\d{2}:\d{2}/g);
-                    if (times && times.length >= 2) {
+                // Extract duty time - it's typically the last time value on the credit line
+                if (ltrim.match(/^Credit:/i)) {
+                    const times = ltrim.match(/\d{1,2}:\d{2}/g);
+                    if (times && times.length >= 1) {
+                        // Duty time is usually the last time value
                         dutyTime = times[times.length - 1];
                         dutyVal = timeToMinutes(dutyTime);
                     }
                 }
 
-                // Count flights (lines with 3-letter codes and times)
-                if (ltrim.match(/^\s*\d+\s+\d{3}\s+\w{3}\s+\d{2}:\d{2}\s+\w{3}\s+\d{2}:\d{2}/)) {
+                // Count flights - look for flight number patterns with times
+                // Format: "1      580  SFO  06:00   SEA  08:08"
+                if (ltrim.match(/^\d+\s+\d{3,}\s+\w{3}\s+\d{1,2}:\d{2}\s+\w{3}\s+\d{1,2}:\d{2}/)) {
                     flightCount++;
                 }
 
-                // Extract layover airports (Hotel lines have airport code before Hotel keyword)
-                if ((ltrim.includes('Hotel') || ltrim.includes('Sheraton') || ltrim.includes('Hyatt') || ltrim.includes('Indigo')) && ltrim.match(/^\s*\d+\s+\w{3}/)) {
-                    const airportMatch = ltrim.match(/^(\d+)\s+(\w{3})/);
+                // Extract layover airports from hotel lines
+                // Format: "   OMA   015:41  Hotel Indigo Omaha Downtown,"
+                if (ltrim.match(/\d{1,2}:\d{2}\s+(Hotel|Sheraton|Hyatt|Indigo|Aloft|Residence|TBD|Kimpton)/i)) {
+                    // Extract 3-letter airport code at start of line
+                    const airportMatch = ltrim.match(/^(\w{3})\s+\d{1,2}:\d{2}/);
                     if (airportMatch) {
-                        const airport = airportMatch[2];
-                        if (!layoverAirports.includes(airport)) layoverAirports.push(airport);
+                        const airport = airportMatch[1];
+                        if (airport !== 'Day' && airport !== 'DH' && !layoverAirports.includes(airport)) {
+                            layoverAirports.push(airport);
+                        }
                     }
                 }
 
@@ -349,12 +371,17 @@
             }
 
             // Extract active dates from the calendar display
-            activeDates = extractActiveDates(text.substring(text.indexOf(trimmed)));
+            activeDates = extractActiveDates(rawText);
 
             rawPairings.push({
                 id, checkin, checkout, credit, tafb, dutyTime, creditVal, dutyVal, tafbVal, 
                 flightCount, layoverAirports, activeDates, days, rawText: rawText.trim()
             });
+        }
+        
+        console.log(`Parsed ${rawPairings.length} pairings`);
+        if (rawPairings.length > 0) {
+            console.log('First pairing:', rawPairings[0]);
         }
     }
 
@@ -365,10 +392,11 @@
         // Look for the calendar section (lines with | and numbers)
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
-            // Calendar has pipe characters and specific date numbers
-            if (line.includes('|') && (line.includes('--') || line.match(/\d{2}/))) {
+            // Calendar lines have pipe characters
+            if (line.includes('|')) {
                 // Extract numbers that look like dates (01-31)
-                const nums = line.match(/\d{2}/g);
+                // They appear as 2-digit numbers in the calendar
+                const nums = line.match(/\b(0[1-9]|[12]\d|3[01])\b/g);
                 if (nums) {
                     nums.forEach(num => {
                         const day = parseInt(num);
@@ -377,8 +405,6 @@
                         }
                     });
                 }
-                // Stop after finding first active date block or after checking a few lines
-                if (dates.length > 0) break;
             }
         }
         
