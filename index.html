@@ -259,13 +259,15 @@
         let i = 0;
 
         while (i < lines.length) {
-            const line = lines[i].trim();
-            if (!line || line.match(/^Bid Period/)) {
+            const line = lines[i];
+            const trimmed = line.trim();
+            
+            if (!trimmed || trimmed.match(/^---/)) {
                 i++;
                 continue;
             }
 
-            const match = line.match(/^(\d{5})\s+Check-in\s+(\d{2}:\d{2})\s+Check-out\s+(\d{2}:\d{2})/);
+            const match = trimmed.match(/^(\d{5})\s+Check-in\s+(\d{2}:\d{2})\s+Check-out\s+(\d{2}:\d{2})/);
             if (!match) {
                 i++;
                 continue;
@@ -282,58 +284,76 @@
             let dutyVal = 0;
             let tafbVal = 0;
             let flightCount = 0;
-            let layovers = [];
             let layoverAirports = [];
             let activeDates = [];
-            let days = 0;
+            let days = 1;
 
-            rawText = line + '\n';
+            rawText = trimmed + '\n';
             i++;
 
-            while (i < lines.length && !lines[i].trim().match(/^\d{5}\s+Check-in/)) {
+            // Parse pairing details until next pairing
+            while (i < lines.length) {
                 const l = lines[i];
+                const ltrim = l.trim();
+                
+                // Stop at next pairing or dashes
+                if (ltrim.match(/^---/) || ltrim.match(/^\d{5}\s+Check-in/)) {
+                    break;
+                }
+
                 rawText += l + '\n';
 
-                if (l.includes('Credit:') && l.includes('TAFB:')) {
-                    const creditMatch = l.match(/Credit:\s*(\d{2}:\d{2})/);
-                    const tafbMatch = l.match(/TAFB:\s*(\d{2}:\d{2})/);
+                // Extract number of days
+                if (ltrim.includes('-Day')) {
+                    const dayMatch = ltrim.match(/(\d+)-Day/);
+                    if (dayMatch) days = parseInt(dayMatch[1]);
+                }
+
+                // Extract credit and TAFB values
+                if (ltrim.match(/^Credit:/)) {
+                    const creditMatch = ltrim.match(/Credit:\s*(\d{2}:\d{2})/);
                     if (creditMatch) credit = creditMatch[1];
-                    if (tafbMatch) tafb = tafbMatch[1];
                     creditVal = timeToMinutes(credit);
+                }
+
+                if (ltrim.match(/^TAFB:/)) {
+                    const tafbMatch = ltrim.match(/TAFB:\s*(\d{2}:\d{2})/);
+                    if (tafbMatch) tafb = tafbMatch[1];
                     tafbVal = timeToMinutes(tafb);
                 }
 
-                if (l.includes('Duty:')) {
-                    const dutyMatch = l.match(/Duty\s+(\d{2}:\d{2})/);
-                    if (dutyMatch) dutyTime = dutyMatch[1];
-                    dutyVal = timeToMinutes(dutyTime);
+                // Extract max duty time (rightmost time value in credit line with 3+ times)
+                if (ltrim.match(/^Credit:/) && ltrim.split(/\s+/).filter(x => x.match(/\d{2}:\d{2}/)).length >= 2) {
+                    const times = ltrim.match(/\d{2}:\d{2}/g);
+                    if (times && times.length >= 2) {
+                        dutyTime = times[times.length - 1];
+                        dutyVal = timeToMinutes(dutyTime);
+                    }
                 }
 
-                if (l.includes('Hotel') || l.includes('Sheraton') || l.includes('Hyatt') || l.includes('Indigo')) {
-                    const airportMatch = l.match(/^(\d+)\s+(\w{3})\s+/);
+                // Count flights (lines with 3-letter codes and times)
+                if (ltrim.match(/^\s*\d+\s+\d{3}\s+\w{3}\s+\d{2}:\d{2}\s+\w{3}\s+\d{2}:\d{2}/)) {
+                    flightCount++;
+                }
+
+                // Extract layover airports (Hotel lines have airport code before Hotel keyword)
+                if ((ltrim.includes('Hotel') || ltrim.includes('Sheraton') || ltrim.includes('Hyatt') || ltrim.includes('Indigo')) && ltrim.match(/^\s*\d+\s+\w{3}/)) {
+                    const airportMatch = ltrim.match(/^(\d+)\s+(\w{3})/);
                     if (airportMatch) {
                         const airport = airportMatch[2];
                         if (!layoverAirports.includes(airport)) layoverAirports.push(airport);
                     }
                 }
 
-                if (l.match(/^\s*\d+\s+\w{3}\s+\w{3}\s+\d{2}:\d{2}/)) {
-                    flightCount++;
-                }
-
-                if (l.includes('Check-In') && !l.includes('Check-in') || l.match(/Day\s+\d+\s+/)) {
-                    const dayMatch = l.match(/Day\s+(\d+)/);
-                    if (dayMatch) days = Math.max(days, parseInt(dayMatch[1]));
-                }
-
                 i++;
             }
 
-            // Extract date information from calendar or other indicators
-            activeDates = extractActiveDates(rawText);
+            // Extract active dates from the calendar display
+            activeDates = extractActiveDates(text.substring(text.indexOf(trimmed)));
 
             rawPairings.push({
-                id, checkin, checkout, credit, tafb, dutyTime, creditVal, dutyVal, tafbVal, flightCount, layovers, layoverAirports, activeDates, days: Math.max(days, 1), rawText
+                id, checkin, checkout, credit, tafb, dutyTime, creditVal, dutyVal, tafbVal, 
+                flightCount, layoverAirports, activeDates, days, rawText: rawText.trim()
             });
         }
     }
@@ -341,16 +361,28 @@
     function extractActiveDates(text) {
         const dates = [];
         const lines = text.split('\n');
-        for (const line of lines) {
-            if (line.includes('SEP') || line.includes('AUG')) {
-                const match = line.match(/SEP(\d{2})/);
-                if (match) {
-                    const day = parseInt(match[1]);
-                    if (day > 0 && day <= 31) dates.push(day);
+        
+        // Look for the calendar section (lines with | and numbers)
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            // Calendar has pipe characters and specific date numbers
+            if (line.includes('|') && (line.includes('--') || line.match(/\d{2}/))) {
+                // Extract numbers that look like dates (01-31)
+                const nums = line.match(/\d{2}/g);
+                if (nums) {
+                    nums.forEach(num => {
+                        const day = parseInt(num);
+                        if (day > 0 && day <= 31 && !dates.includes(day)) {
+                            dates.push(day);
+                        }
+                    });
                 }
+                // Stop after finding first active date block or after checking a few lines
+                if (dates.length > 0) break;
             }
         }
-        return dates.length > 0 ? dates : [1];
+        
+        return dates.length > 0 ? dates.sort((a, b) => a - b) : [1];
     }
 
     function populateAirportFilters() {
